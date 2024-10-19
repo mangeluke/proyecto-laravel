@@ -20,20 +20,19 @@
                     <table id="example" class="table table-striped" style="width:100%">
                         <thead class="thead-dark">
                         <tr>
-
                             <th scope="col">Nombres</th>
                             <th scope="col">Correo</th>
                             <th scope="col">Telefono</th>
                             <th scope="col">Tipo servicio</th>
                             <th scope="col">Empleado</th>
                             <th scope="col">Fecha</th>
-
+                            <th scope="col">Acciones</th>
+                            <th scope="col"></th>
                         </tr>
                         </thead>
                         <tbody>
                             @php $secuencia = 1; @endphp
                             @foreach ($agendas as $agenda)
-
                         <tr>
                             <td>{{ $agenda->nombres }}</td>
                             <td>{{ $agenda->correo }}</td>
@@ -76,12 +75,12 @@
 </script>
 <script>
     $(document).ready(function() {
-        $('#example').DataTable({
-            responsive: true,
-            dom: 'Bfrtip',
-            buttons: [
-                'copy', 'csv', 'excel', 'pdf', 'print'
-            ]
-        });
+    $('#example').DataTable({
+        responsive: true,
+        dom: 'Bfrtip',
+        buttons: [
+            'copy', 'csv', 'excel', 'pdf', 'print'
+        ]
     });
+});
     </script>
