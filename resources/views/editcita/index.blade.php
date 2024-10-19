@@ -93,74 +93,141 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
-    const dateInput = document.getElementById('datesemana');
+    const dateInput = document.getElementById('fecha');
+    const empleadoSelect = document.getElementById('empleado_id');
     const calendarContainer = document.getElementById('calendar-container');
-
-    // Establecer la fecha y hora mínima
-    const ahora = new Date();
-    const anio = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, '0'); // Los meses son 0-11
-    const dia = String(ahora.getDate()).padStart(2, '0');
-    const horas = String(ahora.getHours()).padStart(2, '0');
-    const minutos = String(ahora.getMinutes()).padStart(2, '0');
-    const fechaMinima = `${anio}-${mes}-${dia}T${horas}:${minutos}`;
     
-    dateInput.setAttribute("min", fechaMinima); // Establece el valor mínimo del input
-
     const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
-    editable: true,
-    selectable: true,
-    dateClick: function(info) {
-        const selectedDate = info.date;
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        editable: true,
+        selectable: true,
+        dateClick: function(info) {
+    const selectedDate = info.date;
+    const timezoneOffset = selectedDate.getTimezoneOffset() * 60000; // Obtener la diferencia en milisegundos
+    const adjustedDate = new Date(selectedDate.getTime() - timezoneOffset); // Ajustar la fecha
 
-        // Verificar si la fecha seleccionada es válida (no puede ser anterior a ahora)
-        const ahora = new Date();
-        if (selectedDate < ahora) {
-            alert('No se puede seleccionar una fecha y hora anteriores a la actual.');
-            return;
-        }
-
-        const formattedDate = selectedDate.toISOString().slice(0, 16); // Formato: YYYY-MM-DDTHH:MM
-        dateInput.value = formattedDate; // Actualiza el campo de entrada
-        calendarContainer.style.display = 'none'; // Oculta el calendario
-    },
-    select: function(selectionInfo) {
-        const startDate = selectionInfo.start;
-
-        // Verificar si la fecha seleccionada es válida (no puede ser anterior a ahora)
-        const ahora = new Date();
-        if (startDate < ahora) {
-            alert('No se puede seleccionar una fecha y hora anteriores a la actual.');
-            calendar.unselect(); // Desmarcar la selección si no es válida
-            return;
-        }
-
-        const formattedDate = startDate.toISOString().slice(0, 16); // Formato: YYYY-MM-DDTHH:MM
-        dateInput.value = formattedDate; // Actualiza el campo de entrada
-        calendarContainer.style.display = 'none'; // Oculta el calendario
+    // Verificar si la fecha seleccionada es válida (no puede ser anterior a ahora)
+    const ahora = new Date();
+    if (adjustedDate < ahora) {
+        alert('No se puede seleccionar una fecha y hora anteriores a la actual.');
+        return;
     }
-});
 
+    const formattedDate = adjustedDate.toISOString().slice(0, 16); // Formato: YYYY-MM-DDTHH:MM
+    dateInput.value = formattedDate; // Actualiza el campo de entrada
+    calendarContainer.style.display = 'none'; // Oculta el calendario
+},
+        select: function(selectionInfo) {
+            const startDate = selectionInfo.start;
+            const endDate = selectionInfo.end;
+
+            // Verificar si las fechas seleccionadas están ocupadas
+            const isOccupied = occupiedDates.some(occupied => {
+                return (
+                    (startDate >= new Date(occupied.start) && startDate < new Date(occupied.end)) ||
+                    (endDate > new Date(occupied.start) && endDate <= new Date(occupied.end))
+                );
+            });
+
+            if (isOccupied) {
+                alert('La fecha y hora seleccionadas ya están ocupadas. Por favor elige otra.');
+                calendar.unselect(); // Desmarcar la selección si no es válida
+            } else {
+                const formattedDate = startDate.toISOString().slice(0, 16); // Formato: YYYY-MM-DDTHH:MM
+                dateInput.value = formattedDate; // Actualiza el campo de entrada
+                calendarContainer.style.display = 'none'; // Oculta el calendario
+            }
+        }
+    });
+
+    let occupiedDates = []; // Array para almacenar las fechas ocupadas
+
+    empleadoSelect.addEventListener('change', function() {
+        const empleadoId = empleadoSelect.value;
+        if (empleadoId) {
+            fetch(`{{ route('agendacita.ocupadas') }}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: new URLSearchParams({ empleado_id: empleadoId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                occupiedDates = data; // Almacena las fechas ocupadas
+                calendar.removeAllEvents(); // Limpia eventos anteriores
+                calendar.addEventSource(data); // Añadir las fechas ocupadas al calendario
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    });
 
     dateInput.addEventListener('click', function() {
-        calendar.render(); // Asegúrate de que el calendario se renderice
-        calendarContainer.style.display = 'block'; // Muestra el calendario
+        calendar.render();
+        calendarContainer.style.display = 'block';
     });
 
     document.addEventListener('click', function(event) {
         if (!calendarContainer.contains(event.target) && event.target !== dateInput) {
-            calendarContainer.style.display = 'none'; // Oculta el calendario al hacer clic fuera
+            calendarContainer.style.display = 'none';
         }
     });
 });
 
+
     </script>
+
+    <script>
+    document.getElementById('booking-form').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevenir el envío normal del formulario
+
+    const formData = new FormData(this);
+
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest', // Importante para CSRF
+            'X-CSRF-TOKEN': '{{ csrf_token() }}' // Esto se utiliza para la protección CSRF
+        },
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json(); // Esperar una respuesta JSON
+        }
+        throw new Error('Network response was not ok.');
+    })
+    .then(data => {
+        // Aquí puedes mostrar el SweetAlert de éxito
+        Swal.fire({
+            title: '¡Éxito!',
+            text: data.message,
+            icon: 'success',
+            confirmButtonText: 'Aceptar'
+        }).then(() => {
+            // Limpiar el formulario
+            document.getElementById('booking-form').reset(); // Limpia el formulario
+            window.location.href = '{{ route("agendacita.index") }}'; // Redirige a la página de índice
+        });
+    })
+    .catch(error => {
+        // Manejar errores
+        Swal.fire({
+            title: 'Error',
+            text: 'Hubo un problema al agendar la cita.',
+            icon: 'error',
+            confirmButtonText: 'Aceptar'
+        });
+    });
+});
+
+</script>
 
     <style>
         /* Estilo adicional para el calendario */

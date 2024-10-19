@@ -100,5 +100,21 @@ class AgendaController extends Controller
         $agenda->delete();
         return to_route('citasagendadas.index');
     }
-
+    public function getOccupiedDates(Request $request)
+{
+    $empleadoId = $request->input('empleado_id');
+    
+    // Obtener las citas ocupadas para el empleado seleccionado
+    $citas = Agenda::where('empleado_id', $empleadoId)->get(['fecha']);
+    
+    // Convertir las fechas a un formato que FullCalendar pueda utilizar
+    $ocupadas = $citas->map(function ($cita) {
+        return [
+            'start' => $cita->fecha,
+            'end' => $cita->fecha, // Puedes ajustar el rango de horas si es necesario
+        ];
+    });
+    
+    return response()->json($ocupadas);
+}
 }

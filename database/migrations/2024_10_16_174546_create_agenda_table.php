@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('correo');
             $table->string('telefono');
             $table->string('tiposervicio');
-            $table->date('fecha');
+            $table->dateTime('fecha');
             $table->foreignId('empleado_id')->constrained('empleados')->onDelete('cascade');
             $table->timestamps();
         });
