@@ -85,9 +85,10 @@
 
                             <!-- Botón de enviar -->
                             <div class="flex flex-col mt-4">
-                                <button type="submit" class="p-2 bg-blue-600 text-black rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    Enviar
-                                </button>
+                            <button type="submit" class="p-2 bg-gray-600 text-black rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                Enviar
+                            </button>
+
                                 @if (session('success'))
                                 <script>
                                 Swal.fire({
